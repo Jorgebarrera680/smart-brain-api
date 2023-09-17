@@ -30,7 +30,14 @@ app.use(bodyParser.json());
 
 app.get('/', (req, res)=> { res.send('it is working!') })
 app.post('/signin', signin.handleSignin(db, bcrypt))
-app.post('/register', (req, res) => { register.handleRegister(req, res, db, bcrypt) })
+app.post('/register', (req, res) => { 
+  const { email, password, name } = req.body;
+  if (!email || !password || !name) {
+    return res.status(400).json('Bad Request: Missing required fields');
+  }
+  register.handleRegister(req, res, db, bcrypt);
+})
+
 app.get('/profile/:id', (req, res) => { profile.handleProfileGet(req, res, db)})
 app.put('/image', (req, res) => { image.handleImage(req, res, db)})
 app.post('/imageurl', (req, res) => { image.handleApiCall(req, res)})
