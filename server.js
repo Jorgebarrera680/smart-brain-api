@@ -1,49 +1,45 @@
 const express = require('express');
-const bodyParser = require('body-parser'); // latest version of exressJS now comes with Body-Parser!
+const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
-const knex = require('knex');
+const { Client } = require('pg');
 
 const register = require('./controllers/register');
 const signin = require('./controllers/signin');
 const profile = require('./controllers/profile');
 const image = require('./controllers/image');
 
-const db = knex({
-  // connect to your own database here:
-  client: 'pg',
-  connection: {
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
-  
-} });
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+client.connect();
 
 const app = express();
-
 
 app.use(cors());
 app.use(bodyParser.json());
 
-
-
-app.get('/', (req, res)=> { res.send('it is working!') })
-app.post('/signin', signin.handleSignin(db, bcrypt))
-app.post('/register', (req, res) => { 
+app.get('/', (req, res) => { res.send('it is working!') });
+app.post('/signin', signin.handleSignin(client, bcrypt));
+app.post('/register', (req, res) => {
   const { email, password, name } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json('Bad Request: Missing required fields');
   }
-  register.handleRegister(req, res, db, bcrypt);
-})
+  register.handleRegister(req, res, client, bcrypt);
+});
 
-app.get('/profile/:id', (req, res) => { profile.handleProfileGet(req, res, db)})
-app.put('/image', (req, res) => { image.handleImage(req, res, db)})
-app.post('/imageurl', (req, res) => { image.handleApiCall(req, res)})
+app.get('/profile/:id', (req, res) => { profile.handleProfileGet(req, res, client) });
+app.put('/image', (req, res) => { image.handleImage(req, res, client) });
+app.post('/imageurl', (req, res) => { image.handleApiCall(req, res) });
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, ()=> {
+app.listen(PORT, () => {
   console.log(`app is running on port ${PORT}`);
-})
+});
+
